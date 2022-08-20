@@ -7,7 +7,7 @@
             "command": "C:\\mingw64\\bin\\g++.exe",
             "args": [
                 "-g",
-                "src\\*.cpp",
+                "src\\*.c",
                 "-o",
                 "build\\game.exe",
                 "-IC:/SDL2/x86_64-w64-mingw32/include",

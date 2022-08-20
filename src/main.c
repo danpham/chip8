@@ -1,5 +1,5 @@
 #include <SDL2/SDL.h>
-#include <iostream>
+#include <stdbool.h>
 
 int main(int argv, char** args)
 {

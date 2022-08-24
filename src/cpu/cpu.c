@@ -1,18 +1,18 @@
 /******************************************************************
  * 
  *
- * FILE        : main.c
- * PROJECT     : 
- * AUTHOR      : 
- * DESCRIPTION : Chip8 emulator
+ * FILE        : cpu.c
+ * PROJECT     : chip8
+ * AUTHOR      : danpham
+ * DESCRIPTION : Cpu emulator
  *
  ******************************************************************/
 
 /******************************************************************
  * 1. Included files (microcontroller ones then user defined ones)
  ******************************************************************/
-#include <SDL2/SDL.h>
-#include "cpu/cpu.h"
+#include <string.h>
+#include "cpu.h"
 
 /******************************************************************
  * 2. Define declarations (macros then function macros)
@@ -21,59 +21,47 @@
 /******************************************************************
  * 3. Typedef definitions (simple typedef, then enum and structs)
  ******************************************************************/
+typedef struct
+{
+    U8 memory[CPU_MEMORY_SIZE];
+    U8 i;
+    U8 vx[CPU_NUMBER_OF_VX_REGISTER];
+    U16 pc;
+    U16 stack[CPU_STACK_DEPTH_LEVEL];
+    U8 stackLevel;
+    U8 soundCounter;
+    U8 sysCounter;
+} cpuType;
 
 /******************************************************************
  * 4. Variable definitions (static then global)
  ******************************************************************/
+static cpuType s_cpu;
 
 /******************************************************************
  * 5. Functions prototypes (static only)
  ******************************************************************/
+static Std_ReturnType CpuLoadMemory(U8 * memoryDump, U16 size);
 
 /******************************************************************
- * FUNCTION : main(int argv, char** args)
- *    Description: main
+ * FUNCTION : CpuInit()
+ *    Description: Initialize cpu
  *    Parameters:  None
- *    Return:      None
+ *    Return:      E_OK if initialization succeed, E_NOT_OK
+ *                 otherwise.
  ******************************************************************/
-int main(int argv, char** args)
+Std_ReturnType CpuInit(void)
 {
-    (void)CpuInit();
+    cpuType * returnPtr = NULL;
+    Std_ReturnType returnValue = E_NOT_OK;
 
-    SDL_Init(SDL_INIT_EVERYTHING);
+    returnPtr = (cpuType *)memset((void*)&s_cpu, 0U, sizeof(cpuType));
 
-    SDL_Window *window = SDL_CreateWindow("Hello SDL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 0);
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
-
-    BOOL isRunning = TRUE;
-    SDL_Event event;
-
-    while (isRunning)
+    if (&s_cpu == returnPtr)
     {
-        while (SDL_PollEvent(&event))
-        {
-            switch (event.type)
-            {
-            case SDL_QUIT:
-                isRunning = FALSE;
-                break;
-
-            case SDL_KEYDOWN:
-                if (event.key.keysym.sym == SDLK_ESCAPE)
-                {
-                    isRunning = FALSE;
-                }
-            }
-        }
-
-        SDL_RenderClear(renderer);
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        SDL_RenderPresent(renderer);
+        s_cpu.pc = CPU_START_ADDRESS;
+        returnValue = E_OK;
     }
 
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-
-    return 0;
+    return returnValue;
 }

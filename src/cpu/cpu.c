@@ -1,5 +1,5 @@
 /******************************************************************
- * 
+ *
  *
  * FILE        : cpu.c
  * PROJECT     : chip8
@@ -13,6 +13,7 @@
  ******************************************************************/
 #include <string.h>
 #include "cpu.h"
+#include "../import/import.h"
 
 /******************************************************************
  * 2. Define declarations (macros then function macros)
@@ -29,8 +30,8 @@ typedef struct
     U16 pc;
     U16 stack[CPU_STACK_DEPTH_LEVEL];
     U8 stackLevel;
-    U8 soundCounter;
     U8 sysCounter;
+    U8 soundCounter;
 } cpuType;
 
 /******************************************************************
@@ -41,7 +42,7 @@ static cpuType s_cpu;
 /******************************************************************
  * 5. Functions prototypes (static only)
  ******************************************************************/
-static Std_ReturnType CpuLoadMemory(U8 * memoryDump, U16 size);
+static void cpuCounters(void);
 
 /******************************************************************
  * FUNCTION : CpuInit()
@@ -52,16 +53,54 @@ static Std_ReturnType CpuLoadMemory(U8 * memoryDump, U16 size);
  ******************************************************************/
 Std_ReturnType CpuInit(void)
 {
-    cpuType * returnPtr = NULL;
+    cpuType *returnPtr = NULL;
     Std_ReturnType returnValue = E_NOT_OK;
 
-    returnPtr = (cpuType *)memset((void*)&s_cpu, 0U, sizeof(cpuType));
+    returnPtr = (cpuType *)memset((void *)&s_cpu, 0U, sizeof(cpuType));
 
     if (&s_cpu == returnPtr)
     {
         s_cpu.pc = CPU_START_ADDRESS;
-        returnValue = E_OK;
+
+        /* Load ROM */
+        returnValue = ImportRom(s_cpu.memory);
     }
 
     return returnValue;
+}
+
+/******************************************************************
+ * FUNCTION : cpuCounters()
+ *    Description: Handle time counters
+ *    Parameters:  None
+ *    Return:      None
+ ******************************************************************/
+static void cpuCounters(void)
+{
+    if (s_cpu.sysCounter > 0)
+    {
+        s_cpu.sysCounter--;
+    }
+
+    if (s_cpu.soundCounter > 0)
+    {
+        s_cpu.soundCounter--;
+    }
+
+    return;
+}
+
+/******************************************************************
+ * FUNCTION : CpuMain()
+ *    Description: Main cpu loop
+ *    Parameters:  None
+ *    Return:      E_OK if loop succeed, E_NOT_OK
+ *                 otherwise.
+ ******************************************************************/
+Std_ReturnType CpuMain(void)
+{
+    /* Update cpu counters */
+    cpuCounters();
+
+    return E_OK;
 }

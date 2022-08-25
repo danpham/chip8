@@ -5,6 +5,8 @@
         "parser.h": "c",
         "typedef.h": "c",
         "display.h": "c",
-        "cpu.h": "c"
+        "cpu.h": "c",
+        "stdlib.h": "c",
+        "import.h": "c"
     }
 }

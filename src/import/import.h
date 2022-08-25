@@ -1,16 +1,17 @@
 /******************************************************************
  * 
  *
- * FILE        : parser.c
- * PROJECT     : 
+ * FILE        : import.h
+ * PROJECT     : chip8
  * AUTHOR      : danpham
- * DESCRIPTION : Opcode parser
+ * DESCRIPTION : Rom file import
  *
  ******************************************************************/
 
 /******************************************************************
  * 1. Included files (microcontroller ones then user defined ones)
  ******************************************************************/
+#include "../headers/typedef.h"
 
 /******************************************************************
  * 2. Define declarations (macros then function macros)
@@ -27,10 +28,4 @@
 /******************************************************************
  * 5. Functions prototypes (static only)
  ******************************************************************/
-
-/******************************************************************
- * FUNCTION : 
- *    Description: 
- *    Parameters:  None
- *    Return:      None
- ******************************************************************/
+extern Std_ReturnType ImportRom(U8 *memory);

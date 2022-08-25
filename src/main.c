@@ -38,11 +38,12 @@
  ******************************************************************/
 int main(int argv, char** args)
 {
+    /* Init Cpu */
     (void)CpuInit();
 
     SDL_Init(SDL_INIT_EVERYTHING);
 
-    SDL_Window *window = SDL_CreateWindow("Hello SDL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 0);
+    SDL_Window *window = SDL_CreateWindow("Chip8 emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 0);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
 
     BOOL isRunning = TRUE;
@@ -69,6 +70,9 @@ int main(int argv, char** args)
         SDL_RenderClear(renderer);
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         SDL_RenderPresent(renderer);
+
+        /* Run Cpu main loop */
+        (void)CpuMain();
     }
 
     SDL_DestroyRenderer(renderer);

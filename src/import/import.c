@@ -51,7 +51,7 @@ Std_ReturnType ImportRom(U8 *memory)
     else
     {
         /* Load memory starting from CPU_START_ADDRESS index (CPU_START_ADDRESS - 1) */
-        fread(&memory[CPU_START_ADDRESS - 1U], 1U, CPU_MAX_PROGRAM_SIZE, filePtr);
+        fread(&memory[CPU_START_ADDRESS], 1U, CPU_MAX_PROGRAM_SIZE, filePtr);
         fclose(filePtr);
     }
 

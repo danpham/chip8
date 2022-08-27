@@ -21,6 +21,7 @@
 #define CPU_STACK_DEPTH_LEVEL                                    16U
 #define CPU_START_ADDRESS                                     0x200U
 #define CPU_MAX_PROGRAM_SIZE     CPU_MEMORY_SIZE - CPU_START_ADDRESS
+
 /******************************************************************
  * 3. Typedef definitions (simple typedef, then enum and structs)
  ******************************************************************/

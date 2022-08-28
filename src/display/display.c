@@ -181,8 +181,8 @@ void DisplayUpdate(void)
 }
 
 /******************************************************************
- * FUNCTION : DisplayExit()
- *    Description: Clean display
+ * FUNCTION : displayUpdate()
+ *    Description: Draw pixels on screen from display.screen array
  *    Parameters:  None
  *    Return:      None
  ******************************************************************/

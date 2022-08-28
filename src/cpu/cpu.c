@@ -19,22 +19,28 @@
 /******************************************************************
  * 2. Define declarations (macros then function macros)
  ******************************************************************/
-#define CPU_OPCODES_NUMBER                                        6U
+#define CPU_OPCODES_NUMBER                                        9U
 #define CPU_IDENTIFIER_INVALID                                0xFFFF
 #define CPU_IDENTIFIER_CLEAR_SCREEN                           0x00E0
+#define CPU_IDENTIFIER_RETURN                                 0x00EE
 #define CPU_IDENTIFIER_JUMP                                   0x1000
+#define CPU_IDENTIFIER_CALL                                   0x2000
+#define CPU_IDENTIFIER_SE                                     0x3000
 #define CPU_IDENTIFIER_SET_VX                                 0x6000
 #define CPU_IDENTIFIER_ADD_TO_VX                              0x7000
 #define CPU_IDENTIFIER_SET_I                                  0xA000
 #define CPU_IDENTIFIER_DRAW                                   0xD000
 
 #define CPU_JUMP_MASK                                         0x0FFF
+#define CPU_CALL_MASK                                         0x0FFF
 #define CPU_SET_VX_REGISTER_MASK                              0x0F00
 #define CPU_SET_VX_VALUE_MASK                                 0x00FF
 #define CPU_SET_I_MASK                                        0x0FFF
 #define CPU_DRAW_VX_MASK                                      0x0F00
 #define CPU_DRAW_VY_MASK                                      0x00F0
 #define CPU_DRAW_N_MASK                                       0x000F
+#define CPU_SE_VX_MASK                                        0x0F00
+#define CPU_SE_VALUE_MASK                                     0x00FF
 
 /******************************************************************
  * 3. Typedef definitions (simple typedef, then enum and structs)
@@ -46,7 +52,7 @@ typedef struct
     U8 vx[CPU_NUMBER_OF_VX_REGISTER];
     U16 pc;
     U16 stack[CPU_STACK_DEPTH_LEVEL];
-    U8 stackLevel;
+    S8 stackLevel;
     U8 sysCounter;
     U8 soundCounter;
 } cpuType;
@@ -60,7 +66,10 @@ typedef struct
 opCodeType opCodeReference[CPU_OPCODES_NUMBER] =
 {
     {0xFFFF, CPU_IDENTIFIER_CLEAR_SCREEN},
+    {0xFFFF, CPU_IDENTIFIER_RETURN},
     {0xF000, CPU_IDENTIFIER_JUMP},
+    {0xF000, CPU_IDENTIFIER_CALL},
+    {0xF000, CPU_IDENTIFIER_SE},
     {0xF000, CPU_IDENTIFIER_SET_VX},
     {0xF000, CPU_IDENTIFIER_ADD_TO_VX},
     {0xF000, CPU_IDENTIFIER_SET_I},
@@ -79,6 +88,9 @@ static void cpuCounters(void);
 static void cpuExecute(U16 identifier);
 static U16 cpuParseOpcode(void);
 static void cpuIdentifierClearScreen();
+static void cpuIdentifierReturn();
+static void cpuIdentifierCall(U16 opCode);
+static void cpuIdentifierSE(U16 opCode);
 static void cpuIdentifierJump(U16 opCode);
 static void cpuIdentifierSetVx(U16 opCode);
 static void cpuIdentifierAddToVx(U16 opCode);
@@ -101,7 +113,11 @@ Std_ReturnType CpuInit(void)
 
     if (&s_cpu == returnPtr)
     {
+        /* Set PC to start address */
         s_cpu.pc = CPU_START_ADDRESS;
+
+        /* Set stack level to -1 */
+        s_cpu.stackLevel = -1;
 
         /* Load ROM */
         returnValue = ImportRom(s_cpu.memory);
@@ -168,6 +184,15 @@ static void cpuExecute(U16 identifier)
     case CPU_IDENTIFIER_CLEAR_SCREEN:
         cpuIdentifierClearScreen();
         break;
+    case CPU_IDENTIFIER_RETURN:
+        cpuIdentifierReturn();
+        break;
+    case CPU_IDENTIFIER_CALL:
+        cpuIdentifierCall(currentOpCode);
+        break;
+    case CPU_IDENTIFIER_SE:
+        cpuIdentifierSE(currentOpCode);
+        break;
     case CPU_IDENTIFIER_JUMP:
         cpuIdentifierJump(currentOpCode);
         break;
@@ -193,8 +218,7 @@ static void cpuExecute(U16 identifier)
  * FUNCTION : cpuIdentifierClearScreen()
  *    Description: Clear screen
  *    Parameters:  None
- *    Return:      E_OK if loop succeed, E_NOT_OK
- *                 otherwise.
+ *    Return:      None
  ******************************************************************/
 static void cpuIdentifierClearScreen()
 {
@@ -203,6 +227,64 @@ static void cpuIdentifierClearScreen()
 
     /* Increment program counter */
     s_cpu.pc += 2U;
+}
+
+/******************************************************************
+ * FUNCTION : cpuIdentifierReturn()
+ *    Description: Return
+ *    Parameters:  None
+ *    Return:      None
+ ******************************************************************/
+static void cpuIdentifierReturn()
+{
+    /* Set pc to stack value */
+    s_cpu.pc = s_cpu.stack[s_cpu.stackLevel];
+
+    /* Decrement stack level */
+    s_cpu.stackLevel--;
+}
+
+/******************************************************************
+ * FUNCTION : cpuIdentifierCall()
+ *    Description: Call desired routine
+ *    Parameters:  opCode: jump opcode
+ *    Return:      None
+ ******************************************************************/
+static void cpuIdentifierCall(U16 opCode)
+{
+    U16 routineAddress = opCode & CPU_CALL_MASK;
+
+    /* Increment stack pointer */
+    s_cpu.stackLevel++; 
+
+    /* Store pc on stack */
+    s_cpu.stack[s_cpu.stackLevel] = s_cpu.pc;
+
+    /* Set program counter */
+    s_cpu.pc = routineAddress;
+}
+
+/******************************************************************
+ * FUNCTION : cpuIdentifierSE()
+ *    Description: Skip next instruction if Vx = kk.
+ *    Parameters:  opCode: jump opcode
+ *    Return:      None
+ ******************************************************************/
+static void cpuIdentifierSE(U16 opCode)
+{
+    U8 vx = (U8)((opCode & CPU_SE_VX_MASK) >> 8U);
+    U8 value = (U8)(opCode & CPU_SE_VALUE_MASK);
+
+    if (s_cpu.vx[vx] == value)
+    {
+        /* Skip next instruction */
+        s_cpu.pc += 4U;
+    }
+    else
+    {
+        /* Go to next instruction */        
+        s_cpu.pc += 2U;
+    }
 }
 
 /******************************************************************

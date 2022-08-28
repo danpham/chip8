@@ -32,7 +32,7 @@
  ******************************************************************/
 
 /******************************************************************
- * FUNCTION : ImportRom
+ * FUNCTION : ImportRom()
  *    Description: Import a chip8 rom
  *    Parameters:  memory
  *    Return:      E_OK if import succeed, E_NOT_OK
@@ -43,7 +43,7 @@ Std_ReturnType ImportRom(U8 *memory)
     Std_ReturnType returnValue = E_OK;
     FILE *filePtr;
 
-    if (NULL == (filePtr = fopen("build/breakout.ch8", "rb")))
+    if (NULL == (filePtr = fopen("build/IBMLogo.ch8", "rb")))
     {
         printf("Unable to open file.");
         returnValue = E_NOT_OK;

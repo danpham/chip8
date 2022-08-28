@@ -10,6 +10,7 @@
                 "src\\*.c",
                 "src\\cpu\\*.c",
                 "src\\import\\*.c",
+                "src\\display\\*.c",
                 "-o",
                 "build\\game.exe",
                 "-IC:/SDL2/x86_64-w64-mingw32/include",

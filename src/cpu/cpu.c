@@ -14,6 +14,7 @@
 #include <string.h>
 #include "cpu.h"
 #include "../import/import.h"
+#include "../display/display.h"
 
 /******************************************************************
  * 2. Define declarations (macros then function macros)
@@ -123,8 +124,6 @@ static void cpuCounters(void)
     {
         s_cpu.soundCounter--;
     }
-
-    return;
 }
 
 /******************************************************************
@@ -183,10 +182,10 @@ static void cpuExecute(U16 identifier)
         break;
     case CPU_IDENTIFIER_INVALID:
     default:
+        /* Increment program counter */
+        s_cpu.pc += 2U;
         break;
     }
-
-    return;
 }
 
 /******************************************************************
@@ -198,6 +197,8 @@ static void cpuExecute(U16 identifier)
  ******************************************************************/
 static void cpuIdentifierClearScreen()
 {
+    /* Clear screen routine */
+    DisplayClearScreen();
 
     /* Increment program counter */
     s_cpu.pc += 2U;

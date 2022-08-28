@@ -2,8 +2,8 @@
  *
  *
  * FILE        : main.c
- * PROJECT     :
- * AUTHOR      :
+ * PROJECT     : chip8
+ * AUTHOR      : danpham
  * DESCRIPTION : Chip8 emulator
  *
  ******************************************************************/

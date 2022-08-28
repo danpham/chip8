@@ -42,16 +42,10 @@ typedef struct
  ******************************************************************/
 static displayType display;
 static void displayUpdate(void);
+static BOOL displayGetBit(U8 byte, U8 n);
 
 /******************************************************************
  * 5. Functions prototypes (static only)
- ******************************************************************/
-
-/******************************************************************
- * FUNCTION : DisplayClearScreen()
- *    Description: Clear screen
- *    Parameters:  None
- *    Return:      None
  ******************************************************************/
 
 /******************************************************************
@@ -79,7 +73,7 @@ void DisplayInit()
     {
         for (j = 0U; j < DISPLAY_HEIGHT; j++)
         {
-            if ((j % 2U) == 0U)
+            if (((i % 2U) == 0U) && ((j % 2U) == 0U))
             {
                 display.screen[i][j] = FALSE;
             }
@@ -93,7 +87,7 @@ void DisplayInit()
 
 /******************************************************************
  * FUNCTION : DisplayClearScreen()
- *    Description: Clear screen
+ *    Description: Clear screen instruction
  *    Parameters:  None
  *    Return:      None
  ******************************************************************/
@@ -103,6 +97,43 @@ void DisplayClearScreen()
     (void)memset(display.screen, FALSE, DISPLAY_WIDTH * DISPLAY_HEIGHT);
 }
 
+/******************************************************************
+ * FUNCTION : DisplayDraw()
+ *    Description: Draw instruction
+ *    Parameters:  None
+ *    Return:      None
+ ******************************************************************/
+void DisplayDraw(U8 *memory, U8 x, U8 y, U8 n)
+{
+    U8 i;
+    U8 j;
+
+    /* Number of bytes in the sprite */
+    for (i = 0U; i < n; i++)
+    {
+        /* Go on bits */
+        for (j = 0U; j < 8U; j++)
+        {
+
+            if (displayGetBit(memory[i], j))
+            {
+                display.screen[x+j][y+i+1] ^= TRUE;
+            }
+            else
+            {
+                display.screen[x+j][y+i+1] ^= FALSE;
+            }
+        }
+    }
+
+}
+
+static BOOL displayGetBit(U8 byte, U8 n)
+{
+    U8 value = (byte >> n) & (U8)1U; 
+
+    return (BOOL)value;
+}
 /******************************************************************
  * FUNCTION : DisplayUpdate()
  *    Description: Refresh screen
@@ -135,7 +166,7 @@ void DisplayUpdate(void)
         }
 
         /* Run Cpu main loop */
-        (void)CpuMain();
+        //(void)CpuMain();
 
         displayUpdate();
 

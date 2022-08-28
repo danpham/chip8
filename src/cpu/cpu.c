@@ -32,6 +32,9 @@
 #define CPU_SET_VX_REGISTER_MASK                              0x0F00
 #define CPU_SET_VX_VALUE_MASK                                 0x00FF
 #define CPU_SET_I_MASK                                        0x0FFF
+#define CPU_DRAW_VX_MASK                                      0x0F00
+#define CPU_DRAW_VY_MASK                                      0x00F0
+#define CPU_DRAW_N_MASK                                       0x000F
 
 /******************************************************************
  * 3. Typedef definitions (simple typedef, then enum and structs)
@@ -273,12 +276,20 @@ static void cpuIdentifierSetI(U16 opCode)
 
 /******************************************************************
  * FUNCTION : cpuIdentifierDraw()
- *    Description: Set value to specified register I
- *    Parameters:  opCode: jump opcode
+ *    Description: Draw value
+ *    Parameters:  opCode: draw opcode
  *    Return:      None
  ******************************************************************/
 static void cpuIdentifierDraw(U16 opCode)
 {
+    U8 vx = (U8)((opCode & CPU_DRAW_VX_MASK) >> 8U);
+    U8 x = s_cpu.vx[vx];
+    U8 vy = (U8)((opCode & CPU_DRAW_VY_MASK) >> 4U);
+    U8 y = s_cpu.vx[vy];
+    U8 n = opCode & CPU_DRAW_N_MASK; /* number of bytes to display */
+
+    DisplayDraw(&s_cpu.memory[s_cpu.i], x, y, n);
+
     /* Increment program counter */
     s_cpu.pc += 2U;
 }

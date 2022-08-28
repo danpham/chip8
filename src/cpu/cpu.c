@@ -185,8 +185,6 @@ static void cpuExecute(U16 identifier)
         break;
     case CPU_IDENTIFIER_INVALID:
     default:
-        /* Increment program counter */
-        s_cpu.pc += 2U;
         break;
     }
 }

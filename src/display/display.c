@@ -25,7 +25,7 @@
 #define DISPLAY_PIXEL_WIDTH_IN_PIXELS                             8U
 #define DISPLAY_HEIGHT_SIZED                                        DISPLAY_HEIGHT * DISPLAY_PIXEL_HEIGH_IN_PIXELS
 #define DISPLAY_WIDTH_SIZED                                         DISPLAY_WIDTH * DISPLAY_PIXEL_WIDTH_IN_PIXELS
-
+#define DISPLAY_GET_BIT_MASK                                    0x80
 
 /******************************************************************
  * 3. Typedef definitions (simple typedef, then enum and structs)
@@ -94,7 +94,7 @@ void DisplayInit()
 void DisplayClearScreen()
 {
     /* Clear screen array */
-    (void)memset(display.screen, FALSE, DISPLAY_WIDTH * DISPLAY_HEIGHT);
+    (void)memset(display.screen, TRUE, DISPLAY_WIDTH * DISPLAY_HEIGHT);
 }
 
 /******************************************************************
@@ -114,26 +114,31 @@ void DisplayDraw(U8 *memory, U8 x, U8 y, U8 n)
         /* Go on bits */
         for (j = 0U; j < 8U; j++)
         {
-
             if (displayGetBit(memory[i], j))
             {
-                display.screen[x+j][y+i+1] ^= TRUE;
+                display.screen[x+j][y+i] ^= TRUE;
             }
             else
             {
-                display.screen[x+j][y+i+1] ^= FALSE;
+                display.screen[x+j][y+i] ^= FALSE;
             }
         }
     }
-
 }
 
+/******************************************************************
+ * FUNCTION : displayGetBit()
+ *    Description: Find bit to display in a byte
+ *    Parameters:  None
+ *    Return:      None
+ ******************************************************************/
 static BOOL displayGetBit(U8 byte, U8 n)
 {
-    U8 value = (byte >> n) & (U8)1U; 
+    U8 value = byte & (U8)(DISPLAY_GET_BIT_MASK >> n); 
 
     return (BOOL)value;
 }
+
 /******************************************************************
  * FUNCTION : DisplayUpdate()
  *    Description: Refresh screen
@@ -166,7 +171,7 @@ void DisplayUpdate(void)
         }
 
         /* Run Cpu main loop */
-        //(void)CpuMain();
+        (void)CpuMain();
 
         displayUpdate();
 

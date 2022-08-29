@@ -69,20 +69,7 @@ void DisplayInit()
     }
 
     /* Initialize screen */
-    for (i = 0U; i < DISPLAY_WIDTH; i++)
-    {
-        for (j = 0U; j < DISPLAY_HEIGHT; j++)
-        {
-            if (((i % 2U) == 0U) && ((j % 2U) == 0U))
-            {
-                display.screen[i][j] = FALSE;
-            }
-            else
-            {
-                display.screen[i][j] = TRUE;
-            }
-        }
-    }
+    DisplayClearScreen();
 }
 
 /******************************************************************

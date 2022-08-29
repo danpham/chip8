@@ -19,16 +19,21 @@
 /******************************************************************
  * 2. Define declarations (macros then function macros)
  ******************************************************************/
-#define CPU_OPCODES_NUMBER                                        9U
+#define CPU_OPCODES_NUMBER                                       14U
 #define CPU_IDENTIFIER_INVALID                                0xFFFF
 #define CPU_IDENTIFIER_CLEAR_SCREEN                           0x00E0
 #define CPU_IDENTIFIER_RETURN                                 0x00EE
 #define CPU_IDENTIFIER_JUMP                                   0x1000
 #define CPU_IDENTIFIER_CALL                                   0x2000
 #define CPU_IDENTIFIER_SE                                     0x3000
+#define CPU_IDENTIFIER_SNE                                    0x4000
+#define CPU_IDENTIFIER_SE_VXVY                                0x5000
 #define CPU_IDENTIFIER_SET_VX                                 0x6000
 #define CPU_IDENTIFIER_ADD_TO_VX                              0x7000
+#define CPU_IDENTIFIER_LOAD_VXVY                              0x8000
+#define CPU_IDENTIFIER_SNE_VXVY                               0x9000
 #define CPU_IDENTIFIER_SET_I                                  0xA000
+#define CPU_IDENTIFIER_JUMP_V0                                0xB000
 #define CPU_IDENTIFIER_DRAW                                   0xD000
 
 #define CPU_JUMP_MASK                                         0x0FFF
@@ -41,6 +46,13 @@
 #define CPU_DRAW_N_MASK                                       0x000F
 #define CPU_SE_VX_MASK                                        0x0F00
 #define CPU_SE_VALUE_MASK                                     0x00FF
+#define CPU_SE_VXVY_VX_MASK                                   0x0F00
+#define CPU_SE_VXVY_VY_MASK                                   0x00F0
+#define CPU_LOAD_VXVY_VX_MASK                                 0x0F00
+#define CPU_LOAD_VXVY_VY_MASK                                 0x00F0
+#define CPU_SNE_VXVY_VX_MASK                                  0x0F00
+#define CPU_SNE_VXVY_VY_MASK                                  0x00F0
+#define CPU_JUMP_V0_MASK                                      0x0FFF
 
 /******************************************************************
  * 3. Typedef definitions (simple typedef, then enum and structs)
@@ -70,9 +82,14 @@ opCodeType opCodeReference[CPU_OPCODES_NUMBER] =
     {0xF000, CPU_IDENTIFIER_JUMP},
     {0xF000, CPU_IDENTIFIER_CALL},
     {0xF000, CPU_IDENTIFIER_SE},
+    {0xF000, CPU_IDENTIFIER_SNE},
+    {0xF00F, CPU_IDENTIFIER_SE_VXVY},
     {0xF000, CPU_IDENTIFIER_SET_VX},
     {0xF000, CPU_IDENTIFIER_ADD_TO_VX},
+    {0xF00F, CPU_IDENTIFIER_LOAD_VXVY},
+    {0xF00F, CPU_IDENTIFIER_SNE_VXVY},
     {0xF000, CPU_IDENTIFIER_SET_I},
+    {0xF000, CPU_IDENTIFIER_JUMP_V0},
     {0xF000, CPU_IDENTIFIER_DRAW},
 };
 
@@ -91,10 +108,15 @@ static void cpuIdentifierClearScreen();
 static void cpuIdentifierReturn();
 static void cpuIdentifierCall(U16 opCode);
 static void cpuIdentifierSE(U16 opCode);
+static void cpuIdentifierSNE(U16 opCode);
+static void cpuIdentifierSEVxVy(U16 opCode);
 static void cpuIdentifierJump(U16 opCode);
 static void cpuIdentifierSetVx(U16 opCode);
 static void cpuIdentifierAddToVx(U16 opCode);
+static void cpuIdentifierLoadVxVy(U16 opCode);
+static void cpuIdentifierSNEVxVy(U16 opCode);
 static void cpuIdentifierSetI(U16 opCode);
+static void cpuIdentifierJumpV0(U16 opCode);
 static void cpuIdentifierDraw(U16 opCode);
 
 /******************************************************************
@@ -193,6 +215,12 @@ static void cpuExecute(U16 identifier)
     case CPU_IDENTIFIER_SE:
         cpuIdentifierSE(currentOpCode);
         break;
+    case CPU_IDENTIFIER_SNE:
+        cpuIdentifierSNE(currentOpCode);
+        break;
+    case CPU_IDENTIFIER_SE_VXVY:
+        cpuIdentifierSEVxVy(currentOpCode);
+        break;
     case CPU_IDENTIFIER_JUMP:
         cpuIdentifierJump(currentOpCode);
         break;
@@ -202,8 +230,17 @@ static void cpuExecute(U16 identifier)
     case CPU_IDENTIFIER_ADD_TO_VX:
         cpuIdentifierAddToVx(currentOpCode);
         break;
+    case CPU_IDENTIFIER_LOAD_VXVY:
+        cpuIdentifierLoadVxVy(currentOpCode);
+        break;
+    case CPU_IDENTIFIER_SNE_VXVY:
+        cpuIdentifierSNEVxVy(currentOpCode);
+        break;
     case CPU_IDENTIFIER_SET_I:
         cpuIdentifierSetI(currentOpCode);
+        break;
+    case CPU_IDENTIFIER_JUMP_V0:
+        cpuIdentifierJumpV0(currentOpCode);
         break;
     case CPU_IDENTIFIER_DRAW:
         cpuIdentifierDraw(currentOpCode);
@@ -282,7 +319,94 @@ static void cpuIdentifierSE(U16 opCode)
     }
     else
     {
-        /* Go to next instruction */        
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+    }
+}
+
+/******************************************************************
+ * FUNCTION : cpuIdentifierSNE()
+ *    Description: Skip next instruction if Vx != kk.
+ *    Parameters:  opCode: jump opcode
+ *    Return:      None
+ ******************************************************************/
+static void cpuIdentifierSNE(U16 opCode)
+{
+    U8 vx = (U8)((opCode & CPU_SE_VX_MASK) >> 8U);
+    U8 value = (U8)(opCode & CPU_SE_VALUE_MASK);
+
+    if (s_cpu.vx[vx] != value)
+    {
+        /* Skip next instruction */
+        s_cpu.pc += 4U;
+    }
+    else
+    {
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+    }
+}
+
+/******************************************************************
+ * FUNCTION : cpuIdentifierSEVxVy()
+ *    Description: Skip next instruction if Vx = Vy.
+ *    Parameters:  opCode: jump opcode
+ *    Return:      None
+ ******************************************************************/
+static void cpuIdentifierSEVxVy(U16 opCode)
+{
+    U8 vx = (U8)((opCode & CPU_SE_VXVY_VX_MASK) >> 8U);
+    U8 vy = (U8)((opCode & CPU_SE_VXVY_VY_MASK) >> 4U);
+
+    if (s_cpu.vx[vx] == s_cpu.vx[vy])
+    {
+        /* Skip next instruction */
+        s_cpu.pc += 4U;
+    }
+    else
+    {
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+    }
+}
+
+/******************************************************************
+ * FUNCTION : cpuIdentifierLoadVxVy()
+ *    Description: Set Vx = Vy.
+ *    Parameters:  opCode: jump opcode
+ *    Return:      None
+ ******************************************************************/
+static void cpuIdentifierLoadVxVy(U16 opCode)
+{
+    U8 vx = (U8)((opCode & CPU_LOAD_VXVY_VX_MASK) >> 8U);
+    U8 vy = (U8)((opCode & CPU_LOAD_VXVY_VY_MASK) >> 4U);
+
+    /* Load Vx register with Vy */
+    s_cpu.vx[vx] = s_cpu.vx[vy];
+
+    /* Go to next instruction */
+    s_cpu.pc += 2U;
+}
+
+/******************************************************************
+ * FUNCTION : cpuIdentifierSNEVxVy()
+ *    Description: Skip next instruction if Vx != Vy.
+ *    Parameters:  opCode: jump opcode
+ *    Return:      None
+ ******************************************************************/
+static void cpuIdentifierSNEVxVy(U16 opCode)
+{
+    U8 vx = (U8)((opCode & CPU_SNE_VXVY_VX_MASK) >> 8U);
+    U8 vy = (U8)((opCode & CPU_SNE_VXVY_VY_MASK) >> 4U);
+
+    if (s_cpu.vx[vx] != s_cpu.vx[vy])
+    {
+        /* Skip next instruction */
+        s_cpu.pc += 4U;
+    }
+    else
+    {
+        /* Go to next instruction */
         s_cpu.pc += 2U;
     }
 }
@@ -352,6 +476,20 @@ static void cpuIdentifierSetI(U16 opCode)
 
     /* Increment program counter */
     s_cpu.pc += 2U;
+}
+
+/******************************************************************
+ * FUNCTION : cpuIdentifierJumpV0()
+ *    Description: Jump to location nnn + V0.
+ *    Parameters:  opCode: jump opcode
+ *    Return:      None
+ ******************************************************************/
+static void cpuIdentifierJumpV0(U16 opCode)
+{
+    U16 jumpAddress = opCode & CPU_JUMP_V0_MASK;
+
+    /* Set program counter */
+    s_cpu.pc = s_cpu.vx[0U] + jumpAddress;
 }
 
 /******************************************************************

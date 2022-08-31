@@ -12,6 +12,7 @@
  * 1. Included files (microcontroller ones then user defined ones)
  ******************************************************************/
 #include <string.h>
+#include <time.h>
 #include "cpu.h"
 #include "../import/import.h"
 #include "../display/display.h"
@@ -19,7 +20,7 @@
 /******************************************************************
  * 2. Define declarations (macros then function macros)
  ******************************************************************/
-#define CPU_OPCODES_NUMBER                                       14U
+#define CPU_OPCODES_NUMBER                                       15U
 #define CPU_IDENTIFIER_INVALID                                0xFFFF
 #define CPU_IDENTIFIER_CLEAR_SCREEN                           0x00E0
 #define CPU_IDENTIFIER_RETURN                                 0x00EE
@@ -30,10 +31,11 @@
 #define CPU_IDENTIFIER_SE_VXVY                                0x5000
 #define CPU_IDENTIFIER_SET_VX                                 0x6000
 #define CPU_IDENTIFIER_ADD_TO_VX                              0x7000
-#define CPU_IDENTIFIER_LOAD_VXVY                              0x8000
+#define CPU_IDENTIFIER_8XXX                                   0x8000
 #define CPU_IDENTIFIER_SNE_VXVY                               0x9000
 #define CPU_IDENTIFIER_SET_I                                  0xA000
 #define CPU_IDENTIFIER_JUMP_V0                                0xB000
+#define CPU_IDENTIFIER_RAND_VX                                0xC000
 #define CPU_IDENTIFIER_DRAW                                   0xD000
 
 #define CPU_JUMP_MASK                                         0x0FFF
@@ -48,11 +50,14 @@
 #define CPU_SE_VALUE_MASK                                     0x00FF
 #define CPU_SE_VXVY_VX_MASK                                   0x0F00
 #define CPU_SE_VXVY_VY_MASK                                   0x00F0
-#define CPU_LOAD_VXVY_VX_MASK                                 0x0F00
-#define CPU_LOAD_VXVY_VY_MASK                                 0x00F0
+#define CPU_8XXX_VX_MASK                                      0x0F00
+#define CPU_8XXX_VY_MASK                                      0x00F0
+#define CPU_8XXX_IDENTIFIER_MASK                              0x000F
 #define CPU_SNE_VXVY_VX_MASK                                  0x0F00
 #define CPU_SNE_VXVY_VY_MASK                                  0x00F0
 #define CPU_JUMP_V0_MASK                                      0x0FFF
+#define CPU_RAND_VX_VX_MASK                                   0x0F00
+#define CPU_RAND_VX_BYTE_MASK                                 0x00FF
 
 /******************************************************************
  * 3. Typedef definitions (simple typedef, then enum and structs)
@@ -86,10 +91,11 @@ opCodeType opCodeReference[CPU_OPCODES_NUMBER] =
     {0xF00F, CPU_IDENTIFIER_SE_VXVY},
     {0xF000, CPU_IDENTIFIER_SET_VX},
     {0xF000, CPU_IDENTIFIER_ADD_TO_VX},
-    {0xF00F, CPU_IDENTIFIER_LOAD_VXVY},
+    {0xF000, CPU_IDENTIFIER_8XXX},
     {0xF00F, CPU_IDENTIFIER_SNE_VXVY},
     {0xF000, CPU_IDENTIFIER_SET_I},
     {0xF000, CPU_IDENTIFIER_JUMP_V0},
+    {0xF000, CPU_IDENTIFIER_RAND_VX},
     {0xF000, CPU_IDENTIFIER_DRAW},
 };
 
@@ -113,10 +119,11 @@ static void cpuIdentifierSEVxVy(U16 opCode);
 static void cpuIdentifierJump(U16 opCode);
 static void cpuIdentifierSetVx(U16 opCode);
 static void cpuIdentifierAddToVx(U16 opCode);
-static void cpuIdentifierLoadVxVy(U16 opCode);
+static void cpuIdentifier8xxx(U16 opCode);
 static void cpuIdentifierSNEVxVy(U16 opCode);
 static void cpuIdentifierSetI(U16 opCode);
 static void cpuIdentifierJumpV0(U16 opCode);
+static void cpuIdentifierRandVx(U16 opCode);
 static void cpuIdentifierDraw(U16 opCode);
 
 /******************************************************************
@@ -143,6 +150,9 @@ Std_ReturnType CpuInit(void)
 
         /* Load ROM */
         returnValue = ImportRom(s_cpu.memory);
+
+        /* Random seed initialization */
+        srand(time(NULL));
     }
 
     return returnValue;
@@ -230,8 +240,8 @@ static void cpuExecute(U16 identifier)
     case CPU_IDENTIFIER_ADD_TO_VX:
         cpuIdentifierAddToVx(currentOpCode);
         break;
-    case CPU_IDENTIFIER_LOAD_VXVY:
-        cpuIdentifierLoadVxVy(currentOpCode);
+    case CPU_IDENTIFIER_8XXX:
+        cpuIdentifier8xxx(currentOpCode);
         break;
     case CPU_IDENTIFIER_SNE_VXVY:
         cpuIdentifierSNEVxVy(currentOpCode);
@@ -241,6 +251,9 @@ static void cpuExecute(U16 identifier)
         break;
     case CPU_IDENTIFIER_JUMP_V0:
         cpuIdentifierJumpV0(currentOpCode);
+        break;
+    case CPU_IDENTIFIER_RAND_VX:
+        cpuIdentifierRandVx(currentOpCode);
         break;
     case CPU_IDENTIFIER_DRAW:
         cpuIdentifierDraw(currentOpCode);
@@ -371,18 +384,111 @@ static void cpuIdentifierSEVxVy(U16 opCode)
 }
 
 /******************************************************************
- * FUNCTION : cpuIdentifierLoadVxVy()
- *    Description: Set Vx = Vy.
+ * FUNCTION : cpuIdentifier8xxx()
+ *    Description: Handle all similar opcode starting with 8xxx
  *    Parameters:  opCode: jump opcode
  *    Return:      None
  ******************************************************************/
-static void cpuIdentifierLoadVxVy(U16 opCode)
+static void cpuIdentifier8xxx(U16 opCode)
 {
-    U8 vx = (U8)((opCode & CPU_LOAD_VXVY_VX_MASK) >> 8U);
-    U8 vy = (U8)((opCode & CPU_LOAD_VXVY_VY_MASK) >> 4U);
+    U8 vx = (U8)((opCode & CPU_8XXX_VX_MASK) >> 8U);
+    U8 vy = (U8)((opCode & CPU_8XXX_VY_MASK) >> 4U);
+    U8 identifier = (U8)(opCode & CPU_8XXX_IDENTIFIER_MASK);
+    U16 add;
 
-    /* Load Vx register with Vy */
-    s_cpu.vx[vx] = s_cpu.vx[vy];
+    switch (identifier)
+    {
+    case 0x0:
+        /* Load Vx register with Vy */
+        s_cpu.vx[vx] = s_cpu.vx[vy];
+        break;
+    case 0x1:
+        /* Bitwise OR */
+        s_cpu.vx[vx] |= s_cpu.vx[vy];
+        break;
+    case 0x2:
+        /* Bitwise AND */
+        s_cpu.vx[vx] &= s_cpu.vx[vy];
+        break;
+    case 0x3:
+        /* Bitwise XOR */
+        s_cpu.vx[vx] ^= s_cpu.vx[vy];
+        break;
+    case 0x4:
+        add = s_cpu.vx[vx] + s_cpu.vx[vy];
+
+        /* 8-bit ADD */
+        s_cpu.vx[vx] += s_cpu.vx[vy];
+
+        if (add > 255U)
+        {
+            /* If addition is overflowing set VF to 1 */
+            s_cpu.vx[0xF] = 1U;
+        }
+        else
+        {
+            s_cpu.vx[0xF] = 0U;
+        }
+        break;
+    case 0x5:
+        if (s_cpu.vx[vx] > s_cpu.vx[vy])
+        {
+            /* Not borrow */
+            s_cpu.vx[0xF] = 1U;
+        }
+        else
+        {
+            s_cpu.vx[0xF] = 0U;
+        }
+
+        /* 8-bit SUB */
+        s_cpu.vx[vx] -= s_cpu.vx[vy];
+        break;  
+    case 0x6:
+        /* If the least-significant bit of Vx is 1 */
+        if ((s_cpu.vx[vx] & 0x01) == 1U)
+        {
+            s_cpu.vx[0xF] = 1U;
+        }
+        else
+        {
+            s_cpu.vx[0xF] = 0U;
+        }
+
+        /* Vx is divided by 2 */
+        s_cpu.vx[vx] = s_cpu.vx[vx] / 2U;
+        break;
+    case 0x7:
+        if (s_cpu.vx[vy] > s_cpu.vx[vx])
+        {
+            /* Not borrow */
+            s_cpu.vx[0xF] = 1U;
+        }
+        else
+        {
+            s_cpu.vx[0xF] = 0U;
+        }
+
+        /* 8-bit SUBN */
+        s_cpu.vx[vx] = s_cpu.vx[vy] - s_cpu.vx[vx];
+        break;  
+    case 0xE:
+        /* If the most-significant bit of Vx is 1 */
+        if ((s_cpu.vx[vx] & 0x80) == 1U)
+        {
+            s_cpu.vx[0xF] = 1U;
+        }
+        else
+        {
+            s_cpu.vx[0xF] = 0U;
+        }
+
+        /* Vx is multiplied by 2 */
+        s_cpu.vx[vx] = s_cpu.vx[vx] * 2U;
+        break;
+    default:
+        break;
+    }
 
     /* Go to next instruction */
     s_cpu.pc += 2U;
@@ -490,6 +596,31 @@ static void cpuIdentifierJumpV0(U16 opCode)
 
     /* Set program counter */
     s_cpu.pc = s_cpu.vx[0U] + jumpAddress;
+}
+
+
+/******************************************************************
+ * FUNCTION : cpuIdentifierRandVx()
+ *    Description: Set Vx = random byte AND kk.
+ *    Parameters:  opCode: jump opcode
+ *    Return:      None
+ ******************************************************************/
+static void cpuIdentifierRandVx(U16 opCode)
+{
+    U8 vx = (U8)((opCode & CPU_RAND_VX_VX_MASK) >> 8U);
+    U8 byte = (U8)(opCode & CPU_RAND_VX_BYTE_MASK);
+
+    /* Perform a modulus 255 to be on 1 byte */
+    U8 random = (U8)(rand() % 255U);
+
+    /* AND with the input byte */
+    random = random && byte;
+
+    /* Set result to vx */
+    s_cpu.vx[vx] = random;
+
+    /* Increment program counter */
+    s_cpu.pc += 2U;
 }
 
 /******************************************************************

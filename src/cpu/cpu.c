@@ -793,16 +793,31 @@ static void cpuIdentifierFxxx(U16 opCode)
         s_cpu.pc += 2U;
         break;
     case 0x55:
-        /* To test */
+        /* Store the values of registers V0 to VX inclusive in memory starting at address I. */
         for (i = 0U; i <= vx ; i++)
         {
-            s_cpu.memory[s_cpu.i + i * 2U] = s_cpu.vx[i] & 0xF0;
-            s_cpu.memory[s_cpu.i + i * 2U + 1U] = s_cpu.vx[i] & 0x0F;
+            s_cpu.memory[s_cpu.i + i] = s_cpu.vx[i];
         }
+
+        /*  I is set to I + X + 1 after operation */
+        s_cpu.i += vx + 1U;
 
         /* Go to next instruction */
         s_cpu.pc += 2U;
         break;
+    case 0x65:
+        /* Fill registers V0 to VX inclusive with the values stored in memory starting at address I. */
+        for (i = 0U; i <= vx ; i++)
+        {
+            s_cpu.vx[i] = s_cpu.memory[s_cpu.i + i];
+        }
+
+        /*  I is set to I + X + 1 after operation */
+        s_cpu.i += vx + 1U;
+
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+        break; 
     default:
         /* Go to next instruction */
         s_cpu.pc += 2U;

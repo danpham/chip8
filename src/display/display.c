@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include "display.h"
 #include "../cpu/cpu.h"
+#include "../input/input.h"
 
 /******************************************************************
  * 2. Define declarations (macros then function macros)
@@ -150,10 +151,11 @@ void DisplayUpdate(void)
                 break;
 
             case SDL_KEYDOWN:
-                if (event.key.keysym.sym == SDLK_ESCAPE)
-                {
-                    isRunning = FALSE;
-                }
+                InputUpdateKeyboardDown(event.key.keysym.sym);
+                break;
+            case SDL_KEYUP:
+                InputUpdateKeyboardUp(event.key.keysym.sym);
+                break;
             }
         }
 

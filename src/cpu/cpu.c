@@ -13,14 +13,16 @@
  ******************************************************************/
 #include <string.h>
 #include <time.h>
+#include <stdio.h>
 #include "cpu.h"
 #include "../import/import.h"
 #include "../display/display.h"
+#include "../input/input.h"
 
 /******************************************************************
  * 2. Define declarations (macros then function macros)
  ******************************************************************/
-#define CPU_OPCODES_NUMBER                                       15U
+#define CPU_OPCODES_NUMBER                                       18U
 #define CPU_IDENTIFIER_INVALID                                0xFFFF
 #define CPU_IDENTIFIER_CLEAR_SCREEN                           0x00E0
 #define CPU_IDENTIFIER_RETURN                                 0x00EE
@@ -37,6 +39,9 @@
 #define CPU_IDENTIFIER_JUMP_V0                                0xB000
 #define CPU_IDENTIFIER_RAND_VX                                0xC000
 #define CPU_IDENTIFIER_DRAW                                   0xD000
+#define CPU_IDENTIFIER_SKIP_VX                                0xE09E
+#define CPU_IDENTIFIER_SKIPN_VX                               0xE0A1
+#define CPU_IDENTIFIER_FXXX                                   0xF000
 
 #define CPU_JUMP_MASK                                         0x0FFF
 #define CPU_CALL_MASK                                         0x0FFF
@@ -58,6 +63,9 @@
 #define CPU_JUMP_V0_MASK                                      0x0FFF
 #define CPU_RAND_VX_VX_MASK                                   0x0F00
 #define CPU_RAND_VX_BYTE_MASK                                 0x00FF
+#define CPU_SKIP_VX_MASK                                      0x0F00
+#define CPU_FXXX_VX_MASK                                      0x0F00
+#define CPU_FXXX_IDENTIFIER_MASK                              0x00FF
 
 /******************************************************************
  * 3. Typedef definitions (simple typedef, then enum and structs)
@@ -97,6 +105,9 @@ opCodeType opCodeReference[CPU_OPCODES_NUMBER] =
     {0xF000, CPU_IDENTIFIER_JUMP_V0},
     {0xF000, CPU_IDENTIFIER_RAND_VX},
     {0xF000, CPU_IDENTIFIER_DRAW},
+    {0xF0FF, CPU_IDENTIFIER_SKIP_VX},
+    {0xF0FF, CPU_IDENTIFIER_SKIPN_VX},
+    {0xF000, CPU_IDENTIFIER_FXXX},
 };
 
 /******************************************************************
@@ -125,6 +136,9 @@ static void cpuIdentifierSetI(U16 opCode);
 static void cpuIdentifierJumpV0(U16 opCode);
 static void cpuIdentifierRandVx(U16 opCode);
 static void cpuIdentifierDraw(U16 opCode);
+static void cpuIdentifierSkipVx(U16 opCode);
+static void cpuIdentifierSkipNVx(U16 opCode);
+static void cpuIdentifierFxxx(U16 opCode);
 
 /******************************************************************
  * FUNCTION : CpuInit()
@@ -186,8 +200,8 @@ static void cpuCounters(void)
 static U16 cpuParseOpcode(void)
 {
     U16 currentOpCode = (s_cpu.memory[s_cpu.pc] << 8U) + s_cpu.memory[s_cpu.pc + 1U];
-    U16 identifier = CPU_IDENTIFIER_INVALID;
     U8 i;
+    U16 identifier = currentOpCode;
 
     for (i = 0U; i < CPU_OPCODES_NUMBER; i++)
     {
@@ -258,8 +272,25 @@ static void cpuExecute(U16 identifier)
     case CPU_IDENTIFIER_DRAW:
         cpuIdentifierDraw(currentOpCode);
         break;
+    case CPU_IDENTIFIER_SKIP_VX:
+        cpuIdentifierSkipVx(currentOpCode);
+        break;
+    case CPU_IDENTIFIER_SKIPN_VX:
+        cpuIdentifierSkipNVx(currentOpCode);
+        break;
+    case CPU_IDENTIFIER_FXXX:
+        cpuIdentifierFxxx(currentOpCode);
+        break;
     case CPU_IDENTIFIER_INVALID:
     default:
+        char szText[64];
+        sprintf(szText, "Invalid opCode: %X", identifier);
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+                         "Unknown opcode",
+                         szText,
+                         NULL);
+
+        exit(0);
         break;
     }
 }
@@ -292,6 +323,9 @@ static void cpuIdentifierReturn()
 
     /* Decrement stack level */
     s_cpu.stackLevel--;
+
+    /* Increment program counter */
+    s_cpu.pc += 2U;
 }
 
 /******************************************************************
@@ -641,6 +675,139 @@ static void cpuIdentifierDraw(U16 opCode)
 
     /* Increment program counter */
     s_cpu.pc += 2U;
+}
+
+/******************************************************************
+ * FUNCTION : cpuIdentifierSkipVx()
+ *    Description: Draw value
+ *    Parameters:  opCode: draw opcode
+ *    Return:      None
+ ******************************************************************/
+static void cpuIdentifierSkipVx(U16 opCode)
+{
+    U8 vx = (U8)((opCode & CPU_SKIP_VX_MASK) >> 8U);
+    U8 index = s_cpu.vx[vx];
+    BOOL * keyboardStatus = InputKeyboardStatus();
+
+    if (keyboardStatus[index] == TRUE)
+    {
+        /* Skip next instruction */
+        s_cpu.pc += 4U;
+    }
+    else
+    {
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+    }
+}
+
+/******************************************************************
+ * FUNCTION : cpuIdentifierSkipNVx()
+ *    Description: Draw value
+ *    Parameters:  opCode: draw opcode
+ *    Return:      None
+ ******************************************************************/
+static void cpuIdentifierSkipNVx(U16 opCode)
+{
+    U8 vx = (U8)((opCode & CPU_SKIP_VX_MASK) >> 8U);
+    U8 index = s_cpu.vx[vx];
+    BOOL * keyboardStatus = InputKeyboardStatus();
+
+    if (keyboardStatus[index] != TRUE)
+    {
+        /* Skip next instruction */
+        s_cpu.pc += 4U;
+    }
+    else
+    {
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+    }
+}
+
+/******************************************************************
+ * FUNCTION : cpuIdentifierFxxx()
+ *    Description: Draw value
+ *    Parameters:  opCode: draw opcode
+ *    Return:      None
+ ******************************************************************/
+static void cpuIdentifierFxxx(U16 opCode)
+{
+    U8 vx = (U8)((opCode & CPU_FXXX_VX_MASK) >> 8U);
+    U8 identifier = (U8)(opCode & CPU_FXXX_IDENTIFIER_MASK);
+    U8 i;
+
+    switch (identifier)
+    {
+    case 0x07:
+        /* Set Vx = sysCounter value */
+        s_cpu.vx[vx] = s_cpu.sysCounter;
+
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+        break;
+    case 0x0A:
+        /* Not implemented */
+
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+        break;
+    case 0x15:
+        /* Set delay timer = Vx */
+        s_cpu.sysCounter = s_cpu.vx[vx];
+
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+        break;
+    case 0x18:
+        /* Set sound timer = Vx */
+        s_cpu.soundCounter = s_cpu.vx[vx];
+
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+        break;
+    case 0x1E:
+        /* Set I = I + Vx */
+        s_cpu.i += s_cpu.vx[vx];
+
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+        break;
+    case 0x29:
+        /* Not implemented */
+
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+        break;
+    case 0x33:
+        /* BCD: hundreds */
+        s_cpu.memory[s_cpu.i] = s_cpu.vx[vx] / 100U;
+
+        /* BCD: tens */ 
+        s_cpu.memory[s_cpu.i + 1U] = (s_cpu.vx[vx] % 100U) / 10U;
+
+        /* BCD: decimal */
+        s_cpu.memory[s_cpu.i + 2U] = s_cpu.vx[vx] % 10U;
+        
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+        break;
+    case 0x55:
+        /* To test */
+        for (i = 0U; i <= vx ; i++)
+        {
+            s_cpu.memory[s_cpu.i + i * 2U] = s_cpu.vx[i] & 0xF0;
+            s_cpu.memory[s_cpu.i + i * 2U + 1U] = s_cpu.vx[i] & 0x0F;
+        }
+
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+        break;
+    default:
+        /* Go to next instruction */
+        s_cpu.pc += 2U;
+        break;
+    }
 }
 
 /******************************************************************

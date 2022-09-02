@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include "cpu/cpu.h"
+#include "input/input.h"
 #include "display/display.h"
 
 /******************************************************************
@@ -42,6 +43,8 @@ int main(int argv, char **args)
 {
     /* Init Cpu */
     (void)CpuInit();
+
+    InputInit();
 
     DisplayInit();
 

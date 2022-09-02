@@ -8,6 +8,7 @@
         "cpu.h": "c",
         "stdlib.h": "c",
         "import.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "input.h": "c"
     }
 }

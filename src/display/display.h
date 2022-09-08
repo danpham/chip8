@@ -34,4 +34,4 @@ extern void DisplayInit();
 extern void DisplayUpdate();
 extern void DisplayExit();
 extern void DisplayClearScreen();
-extern void DisplayDraw(U8 *memory, U8 x, U8 y, U8 n);
+extern void DisplayDraw(U8 *memory, U8 *vf, U8 x, U8 y, U8 n);

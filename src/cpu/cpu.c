@@ -22,6 +22,8 @@
 /******************************************************************
  * 2. Define declarations (macros then function macros)
  ******************************************************************/
+#define CPU_SYSTEM_CHARACTER_FONT_SIZE                            5U
+#define CPU_SYSTEM_FONT_SIZE                                        CPU_SYSTEM_CHARACTER_FONT_SIZE * 16U
 #define CPU_OPCODES_NUMBER                                       18U
 #define CPU_IDENTIFIER_INVALID                                0xFFFF
 #define CPU_IDENTIFIER_CLEAR_SCREEN                           0x00E0
@@ -114,6 +116,24 @@ opCodeType opCodeReference[CPU_OPCODES_NUMBER] =
  * 4. Variable definitions (static then global)
  ******************************************************************/
 static cpuType s_cpu;
+static U8 s_systemFont[CPU_SYSTEM_FONT_SIZE] = {
+    0xF0, 0x90, 0x90, 0x90, 0xF0,    /* 0 */
+    0x20, 0x60, 0x20, 0x20, 0x70,    /* 1 */
+    0xF0, 0x10, 0xF0, 0x80, 0xF0,    /* 2 */
+    0xF0, 0x10, 0xF0, 0x10, 0xF0,    /* 3 */
+    0x90, 0x90, 0xF0, 0x10, 0x10,    /* 4 */
+	0xF0, 0x80, 0xF0, 0x10, 0xF0,    /* 5 */
+	0xF0, 0x80, 0xF0, 0x90, 0xF0,    /* 6 */
+	0xF0, 0x10, 0x20, 0x40, 0x40,    /* 7 */
+	0xF0, 0x90, 0xF0, 0x90, 0xF0,    /* 8 */
+	0xF0, 0x90, 0xF0, 0x10, 0xF0,    /* 9 */
+	0xF0, 0x90, 0xF0, 0x90, 0x90,    /* A */
+	0xE0, 0x90, 0xE0, 0x90, 0xE0,    /* B */
+	0xF0, 0x80, 0x80, 0x80, 0xF0,    /* C */
+	0xE0, 0x90, 0x90, 0x90, 0xE0,    /* D */
+	0xF0, 0x80, 0xF0, 0x80, 0xF0,    /* E */
+	0xF0, 0x80, 0xF0, 0x80, 0x80     /* F */
+};
 
 /******************************************************************
  * 5. Functions prototypes (static only)
@@ -151,6 +171,7 @@ Std_ReturnType CpuInit(void)
 {
     cpuType *returnPtr = NULL;
     Std_ReturnType returnValue = E_NOT_OK;
+    U8 i;
 
     returnPtr = (cpuType *)memset((void *)&s_cpu, 0U, sizeof(cpuType));
 
@@ -167,6 +188,12 @@ Std_ReturnType CpuInit(void)
 
         /* Random seed initialization */
         srand(time(NULL));
+
+        /* Load system font */
+        for (i = 0U; i < CPU_SYSTEM_FONT_SIZE; i++)
+        {
+            s_cpu.memory[i] = s_systemFont[i];
+        }
     }
 
     return returnValue;
@@ -632,7 +659,6 @@ static void cpuIdentifierJumpV0(U16 opCode)
     s_cpu.pc = s_cpu.vx[0U] + jumpAddress;
 }
 
-
 /******************************************************************
  * FUNCTION : cpuIdentifierRandVx()
  *    Description: Set Vx = random byte AND kk.
@@ -648,7 +674,7 @@ static void cpuIdentifierRandVx(U16 opCode)
     U8 random = (U8)(rand() % 255U);
 
     /* AND with the input byte */
-    random = random && byte;
+    random = random & byte;
 
     /* Set result to vx */
     s_cpu.vx[vx] = random;
@@ -671,7 +697,7 @@ static void cpuIdentifierDraw(U16 opCode)
     U8 y = s_cpu.vx[vy];
     U8 n = opCode & CPU_DRAW_N_MASK; /* number of bytes to display */
 
-    DisplayDraw(&s_cpu.memory[s_cpu.i], x, y, n);
+    DisplayDraw(&s_cpu.memory[s_cpu.i], &s_cpu.vx[0xF], x, y, n);
 
     /* Increment program counter */
     s_cpu.pc += 2U;
@@ -774,7 +800,8 @@ static void cpuIdentifierFxxx(U16 opCode)
         s_cpu.pc += 2U;
         break;
     case 0x29:
-        /* Not implemented */
+        /* Set I = location of sprite for digit Vx */
+        s_cpu.i = s_cpu.vx[vx] * CPU_SYSTEM_CHARACTER_FONT_SIZE;
 
         /* Go to next instruction */
         s_cpu.pc += 2U;

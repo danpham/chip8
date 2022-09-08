@@ -82,7 +82,7 @@ void DisplayInit()
 void DisplayClearScreen()
 {
     /* Clear screen array */
-    (void)memset(display.screen, TRUE, DISPLAY_WIDTH * DISPLAY_HEIGHT);
+    (void)memset(display.screen, FALSE, DISPLAY_WIDTH * DISPLAY_HEIGHT);
 }
 
 /******************************************************************
@@ -91,24 +91,43 @@ void DisplayClearScreen()
  *    Parameters:  None
  *    Return:      None
  ******************************************************************/
-void DisplayDraw(U8 *memory, U8 x, U8 y, U8 n)
+void DisplayDraw(U8 *memory, U8 *vf, U8 x, U8 y, U8 n)
 {
     U8 i;
     U8 j;
+    U8 xMod;
+    U8 yMod;
 
-    /* Number of bytes in the sprite */
+    /* Clear vf */
+    *vf = 0U;
+
+    /* Number of bytes in the sprite (height) */
     for (i = 0U; i < n; i++)
     {
-        /* Go on bits */
+        yMod = (y+i) % DISPLAY_HEIGHT;
+
+        /* Go on bits (width) */
         for (j = 0U; j < 8U; j++)
         {
-            if (displayGetBit(memory[i], j))
+            xMod = (x+j) % DISPLAY_WIDTH;
+
+            /* Check if edge of screen is not reach */
+            if ((x+j) < DISPLAY_WIDTH)
             {
-                display.screen[x+j][y+i] ^= TRUE;
-            }
-            else
-            {
-                display.screen[x+j][y+i] ^= FALSE;
+                /* If the current pixel in the sprite row is on */
+                if (displayGetBit(memory[i], j))
+                {
+                    /* If pixel on screen is on set vf to 1 */
+                    if (display.screen[xMod][yMod] == TRUE)
+                    {
+                        *vf = 1U;
+                        display.screen[xMod][yMod] = FALSE;
+                    }
+                    else
+                    {
+                        display.screen[xMod][yMod] = TRUE;
+                    }
+                }
             }
         }
     }
@@ -122,9 +141,11 @@ void DisplayDraw(U8 *memory, U8 x, U8 y, U8 n)
  ******************************************************************/
 static BOOL displayGetBit(U8 byte, U8 n)
 {
-    U8 value = byte & (U8)(DISPLAY_GET_BIT_MASK >> n); 
+    U8 value = byte & (U8)(DISPLAY_GET_BIT_MASK >> n);
 
-    return (BOOL)value;
+    value = value >> (7U - n);
+
+    return value;
 }
 
 /******************************************************************
@@ -165,7 +186,7 @@ void DisplayUpdate(void)
         displayUpdate();
 
         /* 50 FPS */
-        SDL_Delay(20U);
+        SDL_Delay(1U);
     }
 }
 
@@ -198,8 +219,8 @@ static void displayUpdate(void)
     {
         for (j = 0U; j < DISPLAY_HEIGHT; j++)
         {
-            /* FALSE is white pixel */
-            if (display.screen[i][j] == FALSE)
+            /* TRUE is white pixel */
+            if (display.screen[i][j] == TRUE)
             {
                 SDL_Rect rect2 = {
                     (int)(DISPLAY_PIXEL_WIDTH_IN_PIXELS * i), (int)(DISPLAY_PIXEL_HEIGH_IN_PIXELS * j),

@@ -705,7 +705,8 @@ static void cpuIdentifierDraw(U16 opCode)
 
 /******************************************************************
  * FUNCTION : cpuIdentifierSkipVx()
- *    Description: Draw value
+ *    Description: Skip next instruction if key with the value of
+ *                 Vx is pressed.
  *    Parameters:  opCode: draw opcode
  *    Return:      None
  ******************************************************************/
@@ -729,7 +730,8 @@ static void cpuIdentifierSkipVx(U16 opCode)
 
 /******************************************************************
  * FUNCTION : cpuIdentifierSkipNVx()
- *    Description: Draw value
+ *    Description: Skip next instruction if key with the value of
+ *                 Vx is not pressed.
  *    Parameters:  opCode: draw opcode
  *    Return:      None
  ******************************************************************/
@@ -773,7 +775,8 @@ static void cpuIdentifierFxxx(U16 opCode)
         s_cpu.pc += 2U;
         break;
     case 0x0A:
-        /* Not implemented */
+        /* Wait for a key press, store the value of the key in Vx. */
+        s_cpu.vx[vx] = InputWaitKeyboardPressed();
 
         /* Go to next instruction */
         s_cpu.pc += 2U;

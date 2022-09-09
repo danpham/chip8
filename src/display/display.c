@@ -172,7 +172,7 @@ void DisplayUpdate(void)
                 break;
 
             case SDL_KEYDOWN:
-                InputUpdateKeyboardDown(event.key.keysym.sym);
+                (void)InputUpdateKeyboardDown(event.key.keysym.sym);
                 break;
             case SDL_KEYUP:
                 InputUpdateKeyboardUp(event.key.keysym.sym);

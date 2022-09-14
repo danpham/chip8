@@ -10,5 +10,6 @@
         "import.h": "c",
         "stdio.h": "c",
         "input.h": "c"
+        "sound.h": "c"
     }
 }

@@ -15,6 +15,7 @@
 #include "display.h"
 #include "../cpu/cpu.h"
 #include "../input/input.h"
+#include "../sound/sound.h"
 
 /******************************************************************
  * 2. Define declarations (macros then function macros)
@@ -242,6 +243,7 @@ static void displayUpdate(void)
  ******************************************************************/
 void DisplayExit()
 {
+    SoundExit();
     SDL_DestroyRenderer(display.renderer);
     SDL_DestroyWindow(display.window);
     SDL_Quit();

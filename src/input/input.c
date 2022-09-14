@@ -46,8 +46,6 @@ inputType s_input;
  ******************************************************************/
 void InputInit()
 {
-    U8 i;
-
     s_input.keyboardMapping[0U] = SDLK_KP_0;
     s_input.keyboardMapping[1U] = SDLK_KP_1;
     s_input.keyboardMapping[2U] = SDLK_KP_2;

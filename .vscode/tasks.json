@@ -12,6 +12,7 @@
                 "src\\import\\*.c",
                 "src\\display\\*.c",
                 "src\\input\\*.c",
+                "src\\sound\\*.c",
                 "-o",
                 "build\\game.exe",
                 "-IC:/SDL2/x86_64-w64-mingw32/include",

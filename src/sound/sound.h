@@ -1,22 +1,17 @@
 /******************************************************************
+ * 
  *
- *
- * FILE        : main.c
+ * FILE        : sound.h
  * PROJECT     : chip8
  * AUTHOR      : danpham
- * DESCRIPTION : Chip8 emulator
+ * DESCRIPTION : Sound
  *
  ******************************************************************/
 
 /******************************************************************
  * 1. Included files (microcontroller ones then user defined ones)
  ******************************************************************/
-#include <stdio.h>
-#include <SDL2/SDL.h>
-#include "cpu/cpu.h"
-#include "input/input.h"
-#include "display/display.h"
-#include "sound/sound.h"
+#include "../headers/typedef.h"
 
 /******************************************************************
  * 2. Define declarations (macros then function macros)
@@ -33,27 +28,6 @@
 /******************************************************************
  * 5. Functions prototypes (static only)
  ******************************************************************/
-
-/******************************************************************
- * FUNCTION : main(int argv, char** args)
- *    Description: main
- *    Parameters:  None
- *    Return:      None
- ******************************************************************/
-int main(int argv, char **args)
-{
-
-    (void)CpuInit();
-
-    InputInit();
-
-    DisplayInit();
-
-    SoundInit();
-
-    DisplayUpdate();
-
-    DisplayExit();
-
-    return 0;
-}
+extern void SoundInit(void);
+extern void SoundPlay(void);
+extern void SoundExit(void);
